@@ -27,6 +27,7 @@ async function load() {
   rules = Array.isArray(data.rules) ? data.rules : [];
   setMaster(data.enabled === true);
   renderRules();
+  await restoreDraft();
 }
 
 function save() {
@@ -175,29 +176,93 @@ function syncActionFields() {
 
 F.action.addEventListener('change', syncActionFields);
 
+function readForm() {
+  return {
+    name: F.name.value,
+    pattern: F.pattern.value,
+    regex: F.regex.checked,
+    method: F.method.value,
+    action: F.action.value,
+    status: F.status.value,
+    statusText: F.statusText.value,
+    delay: F.delay.value,
+    delayAlt: F.delayAlt.value,
+    headers: F.headers.value,
+    body: F.body.value,
+  };
+}
+
+function applyForm(v) {
+  F.name.value = v.name;
+  F.pattern.value = v.pattern;
+  F.regex.checked = v.regex;
+  F.method.value = v.method;
+  F.action.value = v.action;
+  F.status.value = v.status;
+  F.statusText.value = v.statusText;
+  F.delay.value = v.delay;
+  F.delayAlt.value = v.delayAlt;
+  F.headers.value = v.headers;
+  F.body.value = v.body;
+  syncActionFields();
+}
+
+function formFromRule(rule) {
+  return {
+    name: rule ? rule.name || '' : '',
+    pattern: rule ? rule.pattern || '' : '',
+    regex: rule ? !!rule.isRegex : false,
+    method: rule ? rule.method || 'ANY' : 'ANY',
+    action: rule ? rule.action || 'mock' : 'mock',
+    status: rule ? rule.status || 500 : 500,
+    statusText: rule ? rule.statusText || '' : '',
+    delay: rule ? rule.delayMs || 0 : 0,
+    delayAlt: rule ? rule.delayMs || 0 : 0,
+    headers: rule ? rule.headersText || '' : '',
+    body: rule ? rule.body || '' : '',
+  };
+}
+
+// O popup do Chrome destrói o DOM ao fechar: guardamos o que já foi digitado
+// para que a edição em andamento sobreviva até o salvar ou o cancelar.
+function saveDraft() {
+  return chrome.storage.session.set({ draft: { editingId, values: readForm() } });
+}
+
+function clearDraft() {
+  return chrome.storage.session.remove('draft');
+}
+
+async function restoreDraft() {
+  const { draft } = await chrome.storage.session.get('draft');
+  if (!draft || !draft.values) return;
+  if (draft.editingId && !rules.some((r) => r.id === draft.editingId)) {
+    await clearDraft();
+    return;
+  }
+  editingId = draft.editingId || null;
+  applyForm(draft.values);
+  showView('form');
+  F.name.focus();
+}
+
+$('#ruleForm').addEventListener('input', saveDraft);
+$('#ruleForm').addEventListener('change', saveDraft);
+
 function openForm(id) {
   editingId = id || null;
-  const rule = rules.find((r) => r.id === id);
-
-  F.name.value = rule ? rule.name : '';
-  F.pattern.value = rule ? rule.pattern : '';
-  F.regex.checked = rule ? !!rule.isRegex : false;
-  F.method.value = rule ? rule.method || 'ANY' : 'ANY';
-  F.action.value = rule ? rule.action || 'mock' : 'mock';
-  F.status.value = rule ? rule.status || 500 : 500;
-  F.statusText.value = rule ? rule.statusText || '' : '';
-  F.delay.value = rule ? rule.delayMs || 0 : 0;
-  F.delayAlt.value = rule ? rule.delayMs || 0 : 0;
-  F.headers.value = rule ? rule.headersText || '' : '';
-  F.body.value = rule ? rule.body || '' : '';
-
-  syncActionFields();
+  applyForm(formFromRule(rules.find((r) => r.id === id)));
+  saveDraft();
   showView('form');
   F.name.focus();
 }
 
 $('#newRule').addEventListener('click', () => openForm(null));
-$('#cancelRule').addEventListener('click', () => showView('rules'));
+$('#cancelRule').addEventListener('click', async () => {
+  editingId = null;
+  await clearDraft();
+  showView('rules');
+});
 
 const chips = $('#presets');
 PRESETS.forEach((p) => {
@@ -210,6 +275,7 @@ PRESETS.forEach((p) => {
     F.status.value = p.status;
     F.statusText.value = p.statusText;
     if (!F.body.value.trim()) F.body.value = p.body;
+    saveDraft();
   });
   chips.append(chip);
 });
@@ -254,7 +320,9 @@ $('#ruleForm').addEventListener('submit', async (ev) => {
   if (existing >= 0) rules[existing] = rule;
   else rules.push(rule);
 
+  editingId = null;
   await save();
+  await clearDraft();
   renderRules();
   showView('rules');
 });
