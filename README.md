@@ -1,4 +1,4 @@
-# QA Interceptor
+# Request Interceptor
 
 Extensão Chrome/Edge (Manifest V3) para forçar respostas HTTP durante testes de validação: status code, corpo, cabeçalhos, latência e falha de conexão — sem mexer no backend nem no código do app.
 
@@ -27,14 +27,14 @@ As regras são avaliadas de cima para baixo; a primeira que casar vence.
 
 ## Exemplos
 
-| Cenário | URL contém | Comportamento |
-|---|---|---|
-| Tela de erro ao salvar | `/atividades` + `POST` | `500` |
+| Cenário                 | URL contém             | Comportamento                                     |
+| ----------------------- | ---------------------- | ------------------------------------------------- |
+| Tela de erro ao salvar  | `/atividades` + `POST` | `500`                                             |
 | Validação do formulário | `/atividades` + `POST` | `422` com `{"errors":{"titulo":["obrigatório"]}}` |
-| Sessão expirada | `/api/` | `401` |
-| Spinner / timeout | `/atividades` | `Só atrasar`, 8000 ms |
-| Offline parcial | `/upload` | `Falhar a conexão` |
-| Lista vazia | `/atividades` + `GET` | `200` com `[]` |
+| Sessão expirada         | `/api/`                | `401`                                             |
+| Spinner / timeout       | `/atividades`          | `Só atrasar`, 8000 ms                             |
+| Offline parcial         | `/upload`              | `Falhar a conexão`                                |
+| Lista vazia             | `/atividades` + `GET`  | `200` com `[]`                                    |
 
 ## Como funciona
 
