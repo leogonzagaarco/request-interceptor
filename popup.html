@@ -1,139 +1,143 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="popup.css" />
-  </head>
-  <body>
-    <header class="bar">
-      <div class="brand">
-        <span class="dot" id="dot"></span>
-        <span class="brand-name">QA Interceptor</span>
+
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+
+<body>
+  <header class="bar">
+    <div class="brand">
+      <span class="dot" id="dot"></span>
+      <span class="brand-name">Request Interceptor</span>
+    </div>
+    <button class="switch" id="master" role="switch" aria-checked="false">
+      <span class="switch-track"><span class="switch-knob"></span></span>
+      <span class="switch-label" id="masterLabel">Desligado</span>
+    </button>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab is-active" data-view="rules">Regras</button>
+    <button class="tab" data-view="logs">Interceptados</button>
+  </nav>
+
+  <!-- ------------------------------------------------------------ regras -->
+  <section class="view is-active" id="view-rules">
+    <div class="list" id="ruleList"></div>
+
+    <div class="empty" id="ruleEmpty" hidden>
+      <p>Nenhuma regra ainda.</p>
+      <p class="empty-hint">Crie uma regra para devolver um status ou um corpo de resposta fixo em vez de chamar a API.
+      </p>
+    </div>
+
+    <div class="foot">
+      <button class="btn btn-primary" id="newRule">Nova regra</button>
+    </div>
+  </section>
+
+  <!-- ----------------------------------------------------------- editor -->
+  <section class="view" id="view-form">
+    <form id="ruleForm" autocomplete="off">
+      <label class="field">
+        <span class="field-label">Nome</span>
+        <input type="text" id="f-name" placeholder="Salvar atividade falha" required />
+      </label>
+
+      <label class="field">
+        <span class="field-label">URL contém</span>
+        <input type="text" id="f-pattern" class="mono" placeholder="/api/atividades" required />
+      </label>
+
+      <div class="row row-tight">
+        <label class="check">
+          <input type="checkbox" id="f-regex" />
+          <span>Tratar como expressão regular</span>
+        </label>
       </div>
-      <button class="switch" id="master" role="switch" aria-checked="false">
-        <span class="switch-track"><span class="switch-knob"></span></span>
-        <span class="switch-label" id="masterLabel">Desligado</span>
-      </button>
-    </header>
+      <p class="hint">Sem regex, aceita <code>*</code> como curinga. Sem curinga, casa por trecho da URL.</p>
 
-    <nav class="tabs">
-      <button class="tab is-active" data-view="rules">Regras</button>
-      <button class="tab" data-view="logs">Interceptados</button>
-    </nav>
-
-    <!-- ------------------------------------------------------------ regras -->
-    <section class="view is-active" id="view-rules">
-      <div class="list" id="ruleList"></div>
-
-      <div class="empty" id="ruleEmpty" hidden>
-        <p>Nenhuma regra ainda.</p>
-        <p class="empty-hint">Crie uma regra para devolver um status ou um corpo de resposta fixo em vez de chamar a API.</p>
-      </div>
-
-      <div class="foot">
-        <button class="btn btn-primary" id="newRule">Nova regra</button>
-      </div>
-    </section>
-
-    <!-- ----------------------------------------------------------- editor -->
-    <section class="view" id="view-form">
-      <form id="ruleForm" autocomplete="off">
+      <div class="row">
         <label class="field">
-          <span class="field-label">Nome</span>
-          <input type="text" id="f-name" placeholder="Salvar atividade falha" required />
+          <span class="field-label">Método</span>
+          <select id="f-method">
+            <option value="ANY">Qualquer</option>
+            <option>GET</option>
+            <option>POST</option>
+            <option>PUT</option>
+            <option>PATCH</option>
+            <option>DELETE</option>
+          </select>
         </label>
-
         <label class="field">
-          <span class="field-label">URL contém</span>
-          <input type="text" id="f-pattern" class="mono" placeholder="/api/atividades" required />
+          <span class="field-label">Comportamento</span>
+          <select id="f-action">
+            <option value="mock">Responder direto</option>
+            <option value="networkError">Falhar a conexão</option>
+            <option value="passthrough">Só atrasar</option>
+          </select>
         </label>
-
-        <div class="row row-tight">
-          <label class="check">
-            <input type="checkbox" id="f-regex" />
-            <span>Tratar como expressão regular</span>
-          </label>
-        </div>
-        <p class="hint">Sem regex, aceita <code>*</code> como curinga. Sem curinga, casa por trecho da URL.</p>
-
-        <div class="row">
-          <label class="field">
-            <span class="field-label">Método</span>
-            <select id="f-method">
-              <option value="ANY">Qualquer</option>
-              <option>GET</option>
-              <option>POST</option>
-              <option>PUT</option>
-              <option>PATCH</option>
-              <option>DELETE</option>
-            </select>
-          </label>
-          <label class="field">
-            <span class="field-label">Comportamento</span>
-            <select id="f-action">
-              <option value="mock">Responder direto</option>
-              <option value="networkError">Falhar a conexão</option>
-              <option value="passthrough">Só atrasar</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="row" data-when="mock">
-          <label class="field field-sm">
-            <span class="field-label">Status</span>
-            <input type="number" id="f-status" class="mono" min="200" max="599" value="500" />
-          </label>
-          <label class="field">
-            <span class="field-label">Texto do status</span>
-            <input type="text" id="f-statusText" placeholder="Internal Server Error" />
-          </label>
-          <label class="field field-sm">
-            <span class="field-label">Atraso (ms)</span>
-            <input type="number" id="f-delay" class="mono" min="0" step="100" value="0" />
-          </label>
-        </div>
-
-        <div class="row" data-when="other" hidden>
-          <label class="field field-sm">
-            <span class="field-label">Atraso (ms)</span>
-            <input type="number" id="f-delay-alt" class="mono" min="0" step="100" value="0" />
-          </label>
-        </div>
-
-        <div class="presets" data-when="mock">
-          <span class="presets-label">Atalhos</span>
-          <div class="chips" id="presets"></div>
-        </div>
-
-        <label class="field" data-when="mock">
-          <span class="field-label">Cabeçalhos</span>
-          <textarea id="f-headers" class="mono" rows="2" placeholder="Content-Type: application/json"></textarea>
-        </label>
-
-        <label class="field" data-when="mock">
-          <span class="field-label">Corpo da resposta</span>
-          <textarea id="f-body" class="mono" rows="6" placeholder='{ "message": "Falha ao salvar" }'></textarea>
-        </label>
-
-        <div class="foot foot-split">
-          <button type="button" class="btn" id="cancelRule">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar regra</button>
-        </div>
-      </form>
-    </section>
-
-    <!-- ------------------------------------------------------------- logs -->
-    <section class="view" id="view-logs">
-      <div class="list" id="logList"></div>
-      <div class="empty" id="logEmpty" hidden>
-        <p>Nada interceptado nesta sessão.</p>
-        <p class="empty-hint">Recarregue a página com o interceptor ligado para ver as chamadas capturadas aqui.</p>
       </div>
-      <div class="foot">
-        <button class="btn" id="clearLogs">Limpar histórico</button>
-      </div>
-    </section>
 
-    <script src="popup.js"></script>
-  </body>
+      <div class="row" data-when="mock">
+        <label class="field field-sm">
+          <span class="field-label">Status</span>
+          <input type="number" id="f-status" class="mono" min="200" max="599" value="500" />
+        </label>
+        <label class="field">
+          <span class="field-label">Texto do status</span>
+          <input type="text" id="f-statusText" placeholder="Internal Server Error" />
+        </label>
+        <label class="field field-sm">
+          <span class="field-label">Atraso (ms)</span>
+          <input type="number" id="f-delay" class="mono" min="0" step="100" value="0" />
+        </label>
+      </div>
+
+      <div class="row" data-when="other" hidden>
+        <label class="field field-sm">
+          <span class="field-label">Atraso (ms)</span>
+          <input type="number" id="f-delay-alt" class="mono" min="0" step="100" value="0" />
+        </label>
+      </div>
+
+      <div class="presets" data-when="mock">
+        <span class="presets-label">Atalhos</span>
+        <div class="chips" id="presets"></div>
+      </div>
+
+      <label class="field" data-when="mock">
+        <span class="field-label">Cabeçalhos</span>
+        <textarea id="f-headers" class="mono" rows="2" placeholder="Content-Type: application/json"></textarea>
+      </label>
+
+      <label class="field" data-when="mock">
+        <span class="field-label">Corpo da resposta</span>
+        <textarea id="f-body" class="mono" rows="6" placeholder='{ "message": "Falha ao salvar" }'></textarea>
+      </label>
+
+      <div class="foot foot-split">
+        <button type="button" class="btn" id="cancelRule">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar regra</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ------------------------------------------------------------- logs -->
+  <section class="view" id="view-logs">
+    <div class="list" id="logList"></div>
+    <div class="empty" id="logEmpty" hidden>
+      <p>Nada interceptado nesta sessão.</p>
+      <p class="empty-hint">Recarregue a página com o interceptor ligado para ver as chamadas capturadas aqui.</p>
+    </div>
+    <div class="foot">
+      <button class="btn" id="clearLogs">Limpar histórico</button>
+    </div>
+  </section>
+
+  <script src="popup.js"></script>
+</body>
+
 </html>
